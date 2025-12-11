@@ -1,26 +1,48 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+function getAuthToken(): string | null {
+  return localStorage.getItem("sitverse_token");
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let message = res.statusText;
+    try {
+      const json = await res.json();
+      message = json.message || message;
+    } catch {
+      const text = await res.text();
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
 }
 
-export async function apiRequest(
+export async function apiRequest<T = unknown>(
   method: string,
   url: string,
   data?: unknown | undefined,
-): Promise<Response> {
+): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res;
+  return res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -29,8 +51,18 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const token = getAuthToken();
+    const headers: Record<string, string> = {};
+    
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const url = queryKey.filter(k => typeof k === 'string').join("/");
+    
+    const res = await fetch(url, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
@@ -44,10 +76,10 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
+      queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      staleTime: 60000,
       retry: false,
     },
     mutations: {
