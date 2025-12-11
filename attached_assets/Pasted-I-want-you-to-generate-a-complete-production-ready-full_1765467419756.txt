@@ -1,0 +1,401 @@
+I want you to generate a complete, production-ready full-stack video uploading & streaming platform called SITVerse, designed and architected as if developed by:
+
+a 20-year experienced Spring Boot backend architect, and
+
+a top-tier Apple-level UI/UX designer who builds clean, modern, animated, beautiful interfaces with perfect spacing, color balance, responsiveness, light mode + dark mode.
+
+The entire project MUST be generated in a single output, fully working on Replit, and easily deployable to Render (backend + frontend + PostgreSQL).
+
+🎯 GOAL
+
+Build a complete YouTube + Instagram Reels–style platform:
+SITVerse → modern, premium, fast, elegant.
+
+Features:
+
+Upload and stream MP4 videos
+
+Upload thumbnails
+
+Commenting (nested)
+
+Likes
+
+Categories
+
+Tags
+
+Search
+
+Video feed grid
+
+Beautiful Apple-like UI/UX (light + dark mode)
+
+Authentication with JWT
+
+Admin dashboard
+
+Fully optimized PostgreSQL support
+
+Byte-range streaming like YouTube
+
+Clean architecture
+
+Complete CRUD
+
+File/folder structure EXACTLY as requested
+
+Everything must be ready to copy into Replit and run immediately.
+
+🧿 BACKEND — SPRING BOOT 3 (Expert-Level Architecture)
+
+Use:
+
+Spring Boot 3 (latest)
+
+Spring Web
+
+Spring Security + JWT
+
+BCryptPasswordEncoder
+
+Spring Data JPA
+
+PostgreSQL
+
+Lombok
+
+Validation (Jakarta)
+
+File Upload (video + thumbnail)
+
+Byte-Range Video Streaming
+
+Global CORS config
+
+Proper package structure
+
+Clean layered architecture:
+controller → service → repository → model → security → config
+
+🔐 Authentication (JWT)
+
+Implement:
+
+Signup (username, email, password)
+
+Login → returns JWT token
+
+Roles: USER, ADMIN
+
+Password hashing using BCrypt
+
+JWT Authentication + Authorization filters
+
+Secure all protected endpoints
+
+🎥 Video Management
+
+Users can:
+
+Upload MP4 videos
+
+Upload thumbnails
+
+Store files in /uploads folder
+
+Capture metadata:
+
+title
+description
+tags
+category
+videoUrl
+thumbnailUrl
+uploadedBy
+uploadedAt
+duration
+views
+likesCount
+
+
+Auto-extract video duration
+
+Auto-generate timestamps
+
+🎞 Video Streaming (YouTube-style)
+
+Create:
+
+GET /api/videos/stream/{id}
+
+
+Capabilities:
+
+Byte-range support
+
+Fast seeking
+
+Smooth playback
+
+Works with HTML5 video element in frontend
+
+❤ Like System
+
+Like / Unlike
+
+Count total likes
+
+Store user likes
+
+Update in real time
+
+💬 Comment System
+
+Nested comments
+
+Replies
+
+Delete comment (author/admin)
+
+Timestamped
+
+Full comment thread loading
+
+🏷 Tags & Categories
+
+Multi-tag support
+
+Category filter
+
+Filter by:
+
+Most viewed
+
+Most liked
+
+Newest
+
+Tags
+
+Category
+
+🔍 Search
+
+Search by:
+
+Title
+
+Description
+
+Tags
+
+🎛 Admin Dashboard
+
+Admin sees:
+
+Total users
+
+Total videos
+
+Most liked videos
+
+Most viewed videos
+
+Uploads per day (API returns graph data)
+
+Users list
+
+Videos list
+
+🗄 DATABASE SCHEMA (PostgreSQL)
+users
+id, username, email, password, role
+
+videos
+id, title, description, category, tags, videoUrl, thumbnailUrl,
+views, likesCount, uploadedBy, uploadedAt, duration
+
+comments
+id, videoId, userId, text, parentId, createdAt
+
+likes
+id, videoId, userId
+
+🎨 FRONTEND — REACT + VITE (APPLE-GRADE UI/UX)
+
+Use:
+
+React + Vite
+
+TailwindCSS (custom themes)
+
+Framer-motion animations
+
+React Router DOM
+
+Axios
+
+LocalStorage for JWT
+
+Light/Dark mode toggle
+
+Minimalistic Apple-inspired glass UI
+
+Elegant gradients
+
+Animated buttons
+
+Modern video card grid
+
+Smooth hover effects
+
+Fully responsive for mobile/tablets
+
+🌈 Frontend Pages (Premium UI)
+1️⃣ Home Page
+
+Beautiful video grid
+
+Category tabs
+
+Trending carousel
+
+Smooth fade-in animations
+
+2️⃣ Auth Pages
+
+Login + Signup
+
+Apple-style glassmorphism
+
+Light & dark mode
+
+Clean forms
+
+Soft gradients
+
+3️⃣ Upload Page
+
+Drag & Drop upload
+
+Live preview
+
+Metadata form
+
+Animated progress bar
+
+4️⃣ Watch Page
+
+Large video player
+
+Animated title + metadata
+
+Like/Unlike button
+
+Comment section with threaded replies
+
+View counter
+
+5️⃣ Profile Page
+
+User details
+
+Uploaded videos
+
+Activity stats
+
+Clean layout
+
+6️⃣ Admin Dashboard
+
+Beautiful charts
+
+User list
+
+Video list
+
+Counters
+
+Analytics
+
+📦 PROJECT STRUCTURE (STRICT)
+✔ Backend
+/backend
+  /src/main/java/com/sitverse
+    /controller
+    /service
+    /repository
+    /model
+    /security
+    /config
+  /uploads
+  application.properties
+  pom.xml
+
+✔ Frontend
+/frontend
+  /src
+    /pages
+    /components
+    /services
+    /context
+  tailwind.config.js
+  vite.config.js
+
+🌐 RENDER.COM DEPLOYMENT
+BACKEND (application.properties)
+spring.datasource.url=${DATABASE_URL}
+spring.datasource.username=${DATABASE_USERNAME}
+spring.datasource.password=${DATABASE_PASSWORD}
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+app.upload.dir=uploads
+
+
+Enable:
+
+CORS
+
+Static folder serving
+
+PostgreSQL connection
+
+FRONTEND
+
+Build using:
+
+npm run build
+
+
+Serve via Render static hosting or directly embedded.
+
+📌 WHAT YOU MUST OUTPUT (SINGLE RESPONSE)
+
+You MUST generate:
+
+✔ Full backend code
+✔ Full frontend code
+✔ All classes, controllers, services, models, config
+✔ JWT implementation
+✔ Streaming logic
+✔ Upload logic
+✔ CRUD
+✔ React pages + components
+✔ Tailwind config
+✔ Light/dark mode
+✔ PostgreSQL-ready config
+✔ Render deployment instructions
+✔ README with run steps
+
+Everything must be complete.
+Everything must be production-ready.
+Everything must work on Replit.
+Do NOT use placeholders.
+Do NOT skip files.
+Do NOT shorten code.
+
+Generate the ENTIRE full-stack application in ONE response.
