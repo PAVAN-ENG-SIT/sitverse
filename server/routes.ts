@@ -7,7 +7,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { signupSchema, loginSchema } from "@shared/schema";
+import { signupSchema, loginSchema } from "@shared/schema";
 import { ZodError } from "zod";
+import ffmpeg from "fluent-ffmpeg";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "sitverse-secret-key";
 
@@ -210,12 +212,18 @@ export async function registerRoutes(
   // Video routes
   app.get("/api/videos", async (req, res) => {
     try {
-      const { category, sort, search, exclude } = req.query;
+      const { category, sort, search, exclude, page, limit } = req.query;
+      const pageNum = parseInt(page as string) || 1;
+      const limitNum = parseInt(limit as string) || 20;
+      const offset = (pageNum - 1) * limitNum;
+
       const videos = await storage.getVideos({
         category: category as string,
         sort: sort as string,
         search: search as string,
         exclude: exclude as string,
+        limit: limitNum,
+        offset: offset,
       });
       res.json(videos);
     } catch (error) {
@@ -235,6 +243,25 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get video error:", error);
       res.status(500).json({ message: "Failed to get video" });
+    }
+  });
+
+  app.get("/api/videos/:id/stats", async (req, res) => {
+    try {
+      const video = await storage.getVideo(req.params.id);
+      if (!video) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      // Also get comment count
+      const comments = await storage.getComments(req.params.id);
+      res.json({
+        views: video.views,
+        likes: video.likesCount,
+        comments: comments.length
+      });
+    } catch (error) {
+      console.error("Get video stats error:", error);
+      res.status(500).json({ message: "Failed to get video stats" });
     }
   });
 
@@ -263,17 +290,56 @@ export async function registerRoutes(
           tags = [];
         }
 
+        let duration = 0;
+        let thumbnailUrl = thumbnailFile
+          ? `/uploads/thumbnails/${thumbnailFile.filename}`
+          : null;
+
+        try {
+          // Get duration
+          await new Promise<void>((resolve) => {
+            ffmpeg.ffprobe(videoFile.path, (err, metadata) => {
+              if (!err && metadata) {
+                duration = metadata.format.duration || 0;
+              }
+              resolve();
+            });
+          });
+
+          // Generate thumbnail if missing
+          if (!thumbnailUrl) {
+            const thumbnailName = `thumb-${Date.now()}.png`;
+            await new Promise<void>((resolve) => {
+              ffmpeg(videoFile.path)
+                .on("end", () => {
+                  thumbnailUrl = `/uploads/thumbnails/${thumbnailName}`;
+                  resolve();
+                })
+                .on("error", (err) => {
+                  console.error("Thumbnail generation error:", err);
+                  resolve();
+                })
+                .screenshots({
+                  count: 1,
+                  folder: thumbnailsDir,
+                  filename: thumbnailName,
+                  size: "640x360",
+                });
+            });
+          }
+        } catch (error) {
+          console.error("FFmpeg processing error:", error);
+        }
+
         const video = await storage.createVideo({
           title: req.body.title,
           description: req.body.description || "",
           category: req.body.category,
           tags,
           videoUrl: `/uploads/videos/${videoFile.filename}`,
-          thumbnailUrl: thumbnailFile
-            ? `/uploads/thumbnails/${thumbnailFile.filename}`
-            : null,
+          thumbnailUrl,
           uploadedBy: req.user!.id,
-          duration: 0,
+          duration: Math.round(duration),
         });
 
         res.json(video);
@@ -441,6 +507,16 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Get top videos error:", error);
       res.status(500).json({ message: "Failed to get top videos" });
+    }
+  });
+
+  app.get("/api/admin/analytics", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const dailyUploads = await storage.getDailyUploadStats(7);
+      res.json({ dailyUploads });
+    } catch (error) {
+      console.error("Get analytics error:", error);
+      res.status(500).json({ message: "Failed to get analytics" });
     }
   });
 

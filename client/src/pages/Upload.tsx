@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Upload as UploadIcon, X, Video, ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
+import { DragDropUpload } from "@/components/DragDropUpload";
 
 const uploadFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -195,56 +196,18 @@ export default function Upload() {
                 <CardDescription>Upload your video in MP4 or WebM format</CardDescription>
               </CardHeader>
               <CardContent>
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleVideoSelect(e.target.files[0])}
-                  data-testid="input-video-file"
+                <DragDropUpload
+                  onFileSelect={handleVideoSelect}
+                  accept={{ "video/*": [] }}
+                  icon={<Video className="w-8 h-8 text-muted-foreground" />}
+                  label="Drag and drop your video"
+                  preview={videoPreview}
+                  onClear={() => {
+                    setVideoFile(null);
+                    setVideoPreview(null);
+                  }}
+                  progress={uploadProgress}
                 />
-                {videoPreview ? (
-                  <div className="relative rounded-lg overflow-hidden bg-black">
-                    <video
-                      src={videoPreview}
-                      className="w-full aspect-video object-contain"
-                      controls
-                    />
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setVideoFile(null);
-                        setVideoPreview(null);
-                      }}
-                      data-testid="button-remove-video"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                      isDragging
-                        ? "border-primary bg-primary/5"
-                        : "border-muted-foreground/25 hover:border-primary/50"
-                    }`}
-                    onClick={() => videoInputRef.current?.click()}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    data-testid="dropzone-video"
-                  >
-                    <Video className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-sm font-medium mb-1">
-                      Drag and drop your video here
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      or click to browse
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -254,48 +217,17 @@ export default function Upload() {
                 <CardDescription>Choose a custom thumbnail (optional)</CardDescription>
               </CardHeader>
               <CardContent>
-                <input
-                  ref={thumbnailInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) =>
-                    e.target.files?.[0] && handleThumbnailSelect(e.target.files[0])
-                  }
-                  data-testid="input-thumbnail-file"
+                <DragDropUpload
+                  onFileSelect={handleThumbnailSelect}
+                  accept={{ "image/*": [] }}
+                  icon={<ImageIcon className="w-8 h-8 text-muted-foreground" />}
+                  label="Drag and drop thumbnail"
+                  preview={thumbnailPreview}
+                  onClear={() => {
+                    setThumbnailFile(null);
+                    setThumbnailPreview(null);
+                  }}
                 />
-                {thumbnailPreview ? (
-                  <div className="relative rounded-lg overflow-hidden">
-                    <img
-                      src={thumbnailPreview}
-                      alt="Thumbnail preview"
-                      className="w-full aspect-video object-cover"
-                    />
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setThumbnailFile(null);
-                        setThumbnailPreview(null);
-                      }}
-                      data-testid="button-remove-thumbnail"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors border-muted-foreground/25 hover:border-primary/50"
-                    onClick={() => thumbnailInputRef.current?.click()}
-                    data-testid="dropzone-thumbnail"
-                  >
-                    <ImageIcon className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to upload thumbnail
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

@@ -22,6 +22,7 @@ import {
   Loader2,
   CornerDownRight,
 } from "lucide-react";
+import { VideoPlayer } from "@/components/VideoPlayer";
 import type { VideoWithUploader, CommentWithUser } from "@shared/schema";
 
 function formatDate(date: Date | string): string {
@@ -200,6 +201,17 @@ export default function Watch() {
       if (!response.ok) throw new Error("Failed to fetch comments");
       return response.json();
     },
+    refetchInterval: 3000
+  });
+
+  const { data: realtimeStats } = useQuery({
+    queryKey: ["/api/videos", id, "stats"],
+    queryFn: async () => {
+      const response = await fetch(`/api/videos/${id}/stats`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    refetchInterval: 3000
   });
 
   const { data: relatedVideos } = useQuery<VideoWithUploader[]>({
@@ -318,12 +330,10 @@ export default function Watch() {
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             <div className="aspect-video rounded-lg overflow-hidden bg-black">
-              <video
+              <VideoPlayer
                 src={`/api/videos/stream/${video.id}`}
-                controls
-                autoPlay
-                className="w-full h-full"
-                data-testid="video-player"
+                poster={video.thumbnailUrl || undefined}
+                autoplay
               />
             </div>
 
@@ -334,7 +344,7 @@ export default function Watch() {
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
                   <Eye className="w-4 h-4" />
-                  {formatViews(video.views || 0)} views
+                  {formatViews(realtimeStats?.views ?? video.views ?? 0)} views
                 </span>
                 <span className="text-muted-foreground/50">-</span>
                 <span className="flex items-center gap-1">
@@ -369,7 +379,7 @@ export default function Watch() {
                     <ThumbsUp
                       className={`w-4 h-4 mr-2 ${userLiked?.liked ? "fill-current" : ""}`}
                     />
-                    {video.likesCount || 0}
+                    {realtimeStats?.likes ?? video.likesCount ?? 0}
                   </Button>
                   <Button
                     variant="secondary"
@@ -388,9 +398,8 @@ export default function Watch() {
               {video.description && (
                 <div className="py-4 border-b">
                   <p
-                    className={`text-sm whitespace-pre-wrap ${
-                      !showFullDescription ? "line-clamp-3" : ""
-                    }`}
+                    className={`text-sm whitespace-pre-wrap ${!showFullDescription ? "line-clamp-3" : ""
+                      }`}
                     data-testid="text-video-description"
                   >
                     {video.description}
@@ -425,7 +434,7 @@ export default function Watch() {
                 <div className="flex items-center gap-2 mb-4">
                   <MessageSquare className="w-5 h-5" />
                   <h2 className="font-semibold">
-                    {comments?.length || 0} Comments
+                    {realtimeStats?.comments ?? comments?.length ?? 0} Comments
                   </h2>
                 </div>
 

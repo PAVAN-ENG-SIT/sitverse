@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Calendar,
 } from "lucide-react";
+import { DailyUploadsChart, TopVideosChart } from "@/components/AdminCharts";
 import type { User, VideoWithUploader } from "@shared/schema";
 
 interface AdminStats {
@@ -80,7 +81,7 @@ export default function Admin() {
   const { isAdmin, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  const getAuthHeaders = () => {
+  const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem("sitverse_token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
@@ -120,6 +121,16 @@ export default function Admin() {
     queryFn: async () => {
       const response = await fetch("/api/admin/top-videos", { headers: getAuthHeaders() });
       if (!response.ok) throw new Error("Failed to fetch top videos");
+      return response.json();
+    },
+    enabled: isAdmin,
+  });
+
+  const { data: analytics } = useQuery<{ dailyUploads: { date: string; count: number }[] }>({
+    queryKey: ["/api/admin/analytics"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/analytics", { headers: getAuthHeaders() });
+      if (!response.ok) throw new Error("Failed to fetch analytics");
       return response.json();
     },
     enabled: isAdmin,
@@ -211,6 +222,22 @@ export default function Admin() {
                 icon={ThumbsUp}
               />
             </>
+          )}
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {analytics?.dailyUploads && (
+            <DailyUploadsChart data={analytics.dailyUploads} />
+          )}
+          {topVideos && (
+            <TopVideosChart
+              data={topVideos.slice(0, 5).map(v => ({
+                title: v.title,
+                views: v.views || 0,
+                likes: v.likesCount || 0
+              }))}
+            />
           )}
         </div>
 

@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 import { useLocation } from "wouter";
 import { VideoCard, VideoCardSkeleton } from "@/components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, Clock, ThumbsUp, Search, Film } from "lucide-react";
+import { TrendingUp, Clock, ThumbsUp, Search, Film, Loader2 } from "lucide-react";
 import type { VideoWithUploader } from "@shared/schema";
 import { CATEGORIES } from "@shared/schema";
 
@@ -15,27 +16,47 @@ export default function Home() {
   const [location] = useLocation();
   const searchParams = new URLSearchParams(location.split("?")[1] || "");
   const searchQuery = searchParams.get("search") || "";
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
-  const buildQueryString = () => {
-    const params = new URLSearchParams();
-    if (selectedCategory !== "all") params.set("category", selectedCategory);
-    if (sortBy) params.set("sort", sortBy);
-    if (searchQuery) params.set("search", searchQuery);
-    const queryStr = params.toString();
-    return queryStr ? `/api/videos?${queryStr}` : "/api/videos";
-  };
+  const { ref, inView } = useInView();
 
-  const { data: videos, isLoading, error } = useQuery<VideoWithUploader[]>({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+    error,
+  } = useInfiniteQuery({
     queryKey: ["/api/videos", selectedCategory, sortBy, searchQuery],
-    queryFn: async () => {
-      const response = await fetch(buildQueryString());
+    queryFn: async ({ pageParam = 1 }) => {
+      const params = new URLSearchParams();
+      if (selectedCategory !== "all") params.set("category", selectedCategory);
+      if (sortBy) params.set("sort", sortBy);
+      if (searchQuery) params.set("search", searchQuery);
+      params.set("page", pageParam.toString());
+      params.set("limit", "12");
+
+      const response = await fetch(`/api/videos?${params.toString()}`);
       if (!response.ok) throw new Error("Failed to fetch videos");
-      return response.json();
+      return response.json() as Promise<VideoWithUploader[]>;
     },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 12 ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
+
+  useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
+
+  const videos = data?.pages.flat() || [];
+  const isLoading = status === "pending";
 
   return (
     <div className="min-h-screen pt-16">
@@ -129,6 +150,14 @@ export default function Home() {
                 <a href="/upload">Upload Your First Video</a>
               </Button>
             )}
+          </div>
+        )}
+
+
+        {/* Loading Spinner for Infinite Scroll */}
+        {videos.length > 0 && (
+          <div ref={ref} className="py-8 flex justify-center w-full">
+            {isFetchingNextPage && <Loader2 className="w-8 h-8 animate-spin text-primary" />}
           </div>
         )}
       </div>

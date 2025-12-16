@@ -33,12 +33,14 @@ export interface IStorage {
     uploadedBy?: string;
     exclude?: string;
     limit?: number;
+    offset?: number;
   }): Promise<VideoWithUploader[]>;
   createVideo(video: InsertVideo): Promise<Video>;
   incrementViews(videoId: string): Promise<void>;
   getVideoCount(): Promise<number>;
   getTotalViews(): Promise<number>;
   getRecentUploadsCount(days: number): Promise<number>;
+  getDailyUploadStats(days: number): Promise<{ date: string; count: number }[]>;
   getTopVideos(limit: number): Promise<VideoWithUploader[]>;
 
   getComments(videoId: string): Promise<CommentWithUser[]>;
@@ -107,6 +109,7 @@ export class DatabaseStorage implements IStorage {
     uploadedBy?: string;
     exclude?: string;
     limit?: number;
+    offset?: number;
   }): Promise<VideoWithUploader[]> {
     const conditions = [];
 
@@ -158,6 +161,10 @@ export class DatabaseStorage implements IStorage {
       query.limit(options.limit);
     }
 
+    if (options?.offset) {
+      query.offset(options.offset);
+    }
+
     const result = await query;
 
     return result.map(({ videos: video, users: uploader }) => ({
@@ -200,6 +207,27 @@ export class DatabaseStorage implements IStorage {
       .where(gte(videos.uploadedAt, dateThreshold));
 
     return Number(result[0]?.count || 0);
+  }
+
+  async getDailyUploadStats(days: number): Promise<{ date: string; count: number }[]> {
+    const result = await db.execute(sql`
+      SELECT TO_CHAR(uploaded_at, 'YYYY-MM-DD') as date, COUNT(*)::int as count
+      FROM videos
+      WHERE uploaded_at >= NOW() - INTERVAL '${sql.raw(days.toString())} days'
+      GROUP BY date
+      ORDER BY date ASC
+    `);
+
+    // Fill in missing days
+    const stats: { date: string; count: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const found = result.rows.find((r: any) => r.date === dateStr);
+      stats.push({ date: dateStr, count: found ? (found as any).count : 0 });
+    }
+    return stats;
   }
 
   async getTopVideos(limit: number): Promise<VideoWithUploader[]> {
